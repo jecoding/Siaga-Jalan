@@ -179,7 +179,7 @@
 
         // --- MAP INITIALIZATION ---
         const map = L.map('map', {
-            center: [-6.2088, 106.8456], // Jakarta
+            center: [-7.681434439452916, 110.83221033919969], // Sukoharjo
             zoom: 13,
             zoomControl: false
         });
@@ -330,65 +330,111 @@
 
         // --- MANAGE BLACK SPOTS ---
         let blackSpotLayers = {};
+        let blackSpotsLayerGroup = L.layerGroup().addTo(map); // Gunakan LayerGroup untuk pembersihan mudah
         const spotsListUl = document.getElementById('blackSpotsList');
 
         async function loadBlackSpots() {
             spotsListUl.innerHTML = '<li class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 italic text-xs text-center border-dashed">Memuat data infrastruktur...</li>';
-            const res = await fetch('/api/admin/black_spots');
-            const data = await res.json();
             
-            spotsListUl.innerHTML = '';
-            
-            if(data.length === 0) {
-                spotsListUl.innerHTML = '<li class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 font-medium italic text-xs text-center border-dashed">Belum ada titik pantauan tersimpan.</li>';
-                return;
-            }
-
-            data.forEach(spot => {
-                // spot.geojson is stringified geojson geometry from PostGIS ST_AsGeoJSON
-                const geometry = JSON.parse(spot.geojson);
-                const layer = L.geoJSON(geometry, {
-                    style: { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.25, weight: 4 },
-                    pointToLayer: function (feature, latlng) {
-                        return L.circleMarker(latlng, { radius: 8, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.5, weight: 2 });
-                    }
-                });
+            try {
+                const res = await fetch('/api/admin/black_spots');
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
+                }
                 
-                layer.bindPopup(`
-                    <div class="font-inter">
-                        <b class="text-slate-800 text-base">${spot.name}</b>
-                        <p class="text-xs text-slate-500 mt-1">Zona Buffer: <span class="font-bold text-red-500">${spot.radius}m</span></p>
-                        <div class="mt-3 pt-2 border-t border-slate-100 text-right">
-                            <button onclick="deleteSpot(${spot.id})" class="px-2 py-1 bg-red-50 text-red-600 font-bold hover:bg-red-100 rounded text-xs transition">Hapus Area</button>
-                        </div>
-                    </div>
-                `);
+                const data = await res.json();
                 
-                layer.addTo(map);
-                blackSpotLayers[spot.id] = { geoLayer: layer, pinMarker: null };
-
-                // Tambahkan pin Google Maps di pusat area (untuk tipe Point)
-                if (geometry.type === 'Point') {
-                    const pin = L.marker([geometry.coordinates[1], geometry.coordinates[0]], { icon: gmapPinIcon });
-                    pin.addTo(map);
-                    blackSpotLayers[spot.id].pinMarker = pin;
+                // 1. Bersihkan semua layer lama dari peta dan sidebar
+                blackSpotsLayerGroup.clearLayers();
+                spotsListUl.innerHTML = '';
+                blackSpotLayers = {};
+                
+                if(data.length === 0) {
+                    spotsListUl.innerHTML = '<li class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 font-medium italic text-xs text-center border-dashed">Belum ada titik pantauan tersimpan.</li>';
+                    return;
                 }
 
-                // Add to sidebar list
-                const li = document.createElement('li');
-                li.className = "bg-white border border-slate-200 p-3 text-sm rounded-lg flex justify-between items-center shadow-sm hover:border-blue-400 hover:bg-blue-50/50 transition group cursor-pointer";
-                li.setAttribute('onclick', `flyToSpot(${spot.id})`);
-                li.innerHTML = `
-                    <div class="truncate">
-                        <div class="font-bold text-slate-700 truncate max-w-[200px]">${spot.name}</div>
-                        <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5"><span class="w-1.5 h-1.5 inline-block bg-red-500 rounded-full mr-1"></span> ${spot.radius}m Radius</div>
-                    </div>
-                    <button onclick="event.stopPropagation(); deleteSpot(${spot.id})" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition opacity-0 group-hover:opacity-100" title="Hapus">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                `;
-                spotsListUl.appendChild(li);
-            });
+                // Urutkan data terbaru di paling atas (ID descending)
+                data.sort((a, b) => b.id - a.id);
+
+                data.forEach(spot => {
+                    try {
+                        const geometry = JSON.parse(spot.geojson);
+                        if (!geometry) return;
+
+                        let geoLayer;
+                        let centerLat, centerLng;
+
+                        if (geometry.type === 'Point') {
+                            centerLat = geometry.coordinates[1];
+                            centerLng = geometry.coordinates[0];
+                            
+                            // Gambar zona buffer 100m
+                            geoLayer = L.circle([centerLat, centerLng], {
+                                radius: spot.radius || 100,
+                                color: '#ef4444', 
+                                fillColor: '#ef4444', 
+                                fillOpacity: 0.2, 
+                                weight: 2,
+                                dashArray: '5, 10'
+                            });
+                        } else {
+                            // Untuk tipe LineString atau Polygon, gunakan L.geoJSON bawaan
+                            geoLayer = L.geoJSON(geometry, {
+                                style: { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.2, weight: 4 }
+                            });
+                            // Ambil center dari bounds untuk penanda pin
+                            const bounds = geoLayer.getBounds();
+                            if (bounds.isValid()) {
+                                const center = bounds.getCenter();
+                                centerLat = center.lat;
+                                centerLng = center.lng;
+                            } else {
+                                return; // Skip invalid bounds
+                            }
+                        }
+
+                        geoLayer.bindPopup(`
+                            <div class="font-inter">
+                                <b class="text-slate-800 text-base">${spot.name}</b>
+                                <p class="text-xs text-slate-500 mt-1">Zona Buffer: <span class="font-bold text-red-500">${spot.radius}m</span></p>
+                                <div class="mt-3 pt-2 border-t border-slate-100 text-right">
+                                    <button onclick="deleteSpot(${spot.id})" class="px-2 py-1 bg-red-50 text-red-600 font-bold hover:bg-red-100 rounded text-xs transition">Hapus Area</button>
+                                </div>
+                            </div>
+                        `);
+                        
+                        blackSpotsLayerGroup.addLayer(geoLayer);
+                        
+                        // Tambahkan Pin Google Maps di pusat
+                        const pinMarker = L.marker([centerLat, centerLng], { icon: gmapPinIcon });
+                        blackSpotsLayerGroup.addLayer(pinMarker);
+                        
+                        blackSpotLayers[spot.id] = { geoLayer, pinMarker };
+
+                        // Tambahkan ke daftar sidebar
+                        const li = document.createElement('li');
+                        li.className = "bg-white border border-slate-200 p-3 text-sm rounded-lg flex justify-between items-center shadow-sm hover:border-blue-400 hover:bg-blue-50/50 transition group cursor-pointer mb-2";
+                        li.setAttribute('onclick', `flyToSpot(${spot.id})`);
+                        li.innerHTML = `
+                            <div class="truncate">
+                                <div class="font-bold text-slate-700 truncate max-w-[180px]">${spot.name}</div>
+                                <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5"><span class="w-1.5 h-1.5 inline-block bg-red-500 rounded-full mr-1"></span> ${spot.radius}m Radius</div>
+                            </div>
+                            <button onclick="event.stopPropagation(); deleteSpot(${spot.id})" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition opacity-0 group-hover:opacity-100" title="Hapus">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        `;
+                        spotsListUl.appendChild(li);
+                    } catch (spotErr) {
+                        console.error("Skipping malformed spot:", spot, spotErr);
+                    }
+                });
+            } catch (err) {
+                console.error("Load failed:", err);
+                spotsListUl.innerHTML = `<li class="p-3 bg-red-50 text-red-500 text-xs rounded-lg text-center">Gagal memuat data: ${err.message}</li>`;
+            }
         }
         loadBlackSpots();
 

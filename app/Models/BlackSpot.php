@@ -12,5 +12,6 @@ class BlackSpot extends Model
     protected $fillable = [
         'name',
         'radius',
+        'location',
     ];
 }

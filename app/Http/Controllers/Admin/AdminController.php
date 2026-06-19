@@ -17,9 +17,14 @@ class AdminController extends Controller
     // Get all black spots to draw on map
     public function getBlackSpots()
     {
-        // ST_AsGeoJSON works seamlessly for Point, LineString, Polygon
-        $spots = DB::select("SELECT id, name, radius, ST_AsGeoJSON(location) as geojson FROM black_spots");
-        return response()->json($spots);
+        try {
+            $spots = BlackSpot::whereNotNull('location')
+                ->select('id', 'name', 'radius', DB::raw('ST_AsGeoJSON(location) as geojson'))
+                ->get();
+            return response()->json($spots);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     // Create a black spot from map click/draw
@@ -31,13 +36,22 @@ class AdminController extends Controller
             'radius' => 'required|integer|min:10',
         ]);
 
-        DB::statement("INSERT INTO black_spots (name, location, radius, created_at, updated_at) VALUES (?, ST_GeomFromGeoJSON(?)::geography, ?, NOW(), NOW())", [
-            $request->name,
-            $request->geojson,
-            $request->radius
-        ]);
+        try {
+            DB::statement("INSERT INTO black_spots (name, location, radius, created_at, updated_at) 
+                           VALUES (?, ST_GeomFromGeoJSON(?)::geography, ?, NOW(), NOW())", [
+                $request->name,
+                $request->geojson,
+                $request->radius
+            ]);
 
-        return response()->json(['status' => 'success', 'message' => 'Black spot berhasil ditambahkan']);
+            return response()->json(['status' => 'success', 'message' => 'Black spot berhasil ditambahkan']);
+        } catch (\Exception $e) {
+            \Log::error('BlackSpot Save Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'Gagal menyimpan ke database: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     // Delete black spot
