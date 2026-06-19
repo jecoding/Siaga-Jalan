@@ -187,7 +187,7 @@
 
     <script>
         const USER_ID = '{{ auth()->id() }}';
-
+  //test vps
         // --- MAP INIT ---
         const map = L.map('map', {
             center: [-7.681434439452916, 110.83221033919969],
