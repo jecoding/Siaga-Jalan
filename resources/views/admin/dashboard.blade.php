@@ -116,7 +116,9 @@
 
                         <div class="pt-4 mt-2">
                             <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Nama / Label Titik</label>
-                            <input type="text" id="spotName" placeholder="Contoh: Tikungan Kematian" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-slate-800 transition placeholder-slate-400 font-medium">
+                            <input type="text" id="spotName" placeholder="Contoh: Tikungan Kematian" required 
+                                oninvalid="this.setCustomValidity('Harap isi kolom ini.')" oninput="this.setCustomValidity('')"
+                                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-slate-800 transition placeholder-slate-400 font-medium">
                         </div>
                         
                         <button type="submit" id="btnSave" class="mt-2 w-full py-3 bg-slate-800 hover:bg-slate-900 active:bg-black text-white font-semibold rounded-lg text-sm transition shadow-md opacity-50 cursor-not-allowed flex justify-center items-center gap-2" disabled>

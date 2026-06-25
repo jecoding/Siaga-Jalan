@@ -32,18 +32,21 @@
             <div>
                 <label class="block text-sm font-medium text-slate-300">Nama</label>
                 <input type="text" name="name" value="{{ old('name') }}" required autofocus
+                    oninvalid="this.setCustomValidity('Harap isi kolom ini.')" oninput="this.setCustomValidity('')"
                     class="w-full mt-1 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-white transition">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Alamat Email</label>
                 <input type="email" name="email" value="{{ old('email') }}" required 
+                    oninvalid="this.setCustomValidity('Harap isi kolom ini.')" oninput="this.setCustomValidity('')"
                     class="w-full mt-1 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-white transition">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Jenis Kendaraan</label>
                 <select name="vehicle_type" required 
+                    oninvalid="this.setCustomValidity('Silakan pilih salah satu item dalam daftar.')" onchange="this.setCustomValidity('')"
                     class="w-full mt-1 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-white transition appearance-none">
                     <option value="" disabled {{ old('vehicle_type') ? '' : 'selected' }}>Pilih Jenis Kendaraan</option>
                     <option value="Motor" {{ old('vehicle_type') == 'Motor' ? 'selected' : '' }}>Motor</option>
@@ -57,12 +60,14 @@
             <div>
                 <label class="block text-sm font-medium text-slate-300">Kata Sandi</label>
                 <input type="password" name="password" required 
+                    oninvalid="this.setCustomValidity('Harap isi kolom ini.')" oninput="this.setCustomValidity('')"
                     class="w-full mt-1 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-white transition">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Konfirmasi Kata Sandi</label>
                 <input type="password" name="password_confirmation" required 
+                    oninvalid="this.setCustomValidity('Harap isi kolom ini.')" oninput="this.setCustomValidity('')"
                     class="w-full mt-1 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-white transition">
             </div>
 

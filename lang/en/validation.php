@@ -164,7 +164,14 @@ return [
 
     'custom' => [
         'email' => [
+            'required' => 'Alamat email wajib diisi.',
+            'email' => 'Alamat email harus berupa alamat email yang valid.',
+            'max' => 'Alamat email tidak boleh lebih dari 255 karakter.',
             'unique' => 'Alamat email tersebut sudah digunakan.',
+        ],
+        'password' => [
+            'confirmed' => 'Konfirmasi kata sandi tidak sesuai.',
+            'min' => 'Kata sandi harus terdiri dari minimal 8 karakter.',
         ],
     ],
 

@@ -34,12 +34,14 @@
             <div>
                 <label class="block text-sm font-medium text-slate-300">Alamat Email</label>
                 <input type="email" name="email" value="{{ old('email') }}" required 
+                    oninvalid="this.setCustomValidity('Harap isi kolom ini.')" oninput="this.setCustomValidity('')"
                     class="w-full mt-1 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-white transition">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Kata Sandi</label>
                 <input type="password" name="password" required 
+                    oninvalid="this.setCustomValidity('Harap isi kolom ini.')" oninput="this.setCustomValidity('')"
                     class="w-full mt-1 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-white transition">
             </div>
 
